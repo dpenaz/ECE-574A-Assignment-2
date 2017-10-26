@@ -9,6 +9,8 @@
 
 using namespace std;
 
+ofstream outfile;
+
 int main(int argc, char *argv[])
 {
 	if (argc < 3) {
@@ -17,7 +19,15 @@ int main(int argc, char *argv[])
 	}
 
 	ifstream infile(argv[1]);
-	ofstream outfile(argv[2]);
+	if (infile.fail()) {
+		cerr << "Input file " << argv[1] << "failed to open" << endl;
+		return 1;
+	}
+	outfile.open(argv[2]);
+	if (outfile.fail()) {
+		cerr << "Output file " << argv[2] << "failed to open" << endl;
+		return 1;
+	}
 
 	string msg = "";
 	string type;
@@ -34,12 +44,14 @@ int main(int argc, char *argv[])
 
 		while (iss >> token)	// Pass through each token in line
 		{
+			bool eqFound = false;
 			if (!token.compare("+")) {	// ADD and INC
-				msg = Add_or_INC(line, var_map);
+				if (!Add_or_INC(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("=")) {	// REG
-				msg = REG_(line, var_map);
+				eqFound = true;
 				break;
 			}
 			else if (!token.compare("-")) {	// SUB and DEC
@@ -111,9 +123,13 @@ int main(int argc, char *argv[])
 				storedTokens.push_back(token);
 				msg = "";
 			}
+
+			if (eqFound)
+				msg = REG_(line, var_map);
 		}
 
 		if (errorFlag != 0) {
+			cerr << errorMsg[errorFlag];
 			outfile << errorMsg[errorFlag];
 			break;
 		}
@@ -127,13 +143,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-bool checkKey(string key, map<string, vector<string>> &my_map)
+bool checkKey(string key, const map<string, vector<string>> &my_map)
 {
-	for (map<string, vector<string>>::iterator it = my_map.begin(); it != my_map.end(); ++it) {
-		if (!it->first.compare(key))
-			return true;
-	}
-	return false;
+	return my_map.find(key) != my_map.end();
 }
 
 int grabVariables(string line, map<string, vector<string>> &my_map)

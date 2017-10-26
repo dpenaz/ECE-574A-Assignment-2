@@ -5,7 +5,7 @@
 
 using namespace std;
 
-string Add_or_INC(string line, map<string, vector<string>> &my_map);
+bool Add_or_INC(string line, map<string, vector<string>> &my_map);
 string REG_(string line, map<string, vector<string>> &my_map);
 string SUB_or_DEC(string line, map<string, vector<string>> &my_map);
 string MOD_(string line, map<string, vector<string>> &my_map);
