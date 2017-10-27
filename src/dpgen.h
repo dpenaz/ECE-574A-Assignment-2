@@ -6,5 +6,5 @@ string errorMsg[3] = {"","ERROR: Invalid Format Detected in netlistFile",
 					  "ERROR: Invalid Type Provided in netlistFile" };
 
 bool checkType(string type);
-bool checkKey(string key, map<string, vector<string>> &my_map);
+bool checkKey(string key, const map<string, vector<string>> &my_map);
 int grabVariables(string line, map<string, vector<string>> &my_map);

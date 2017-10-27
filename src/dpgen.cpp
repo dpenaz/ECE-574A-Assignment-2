@@ -42,76 +42,105 @@ int main(int argc, char *argv[])
 	{
 		istringstream iss(line);
 
+		bool eqFound = false, otherFound = false;;
 		while (iss >> token)	// Pass through each token in line
 		{
-			bool eqFound = false;
 			if (!token.compare("+")) {	// ADD and INC
+				otherFound = true;
 				if (!Add_or_INC(line, var_map))
 					return 1;
 				break;
 			}
 			else if (!token.compare("=")) {	// REG
 				eqFound = true;
-				break;
 			}
 			else if (!token.compare("-")) {	// SUB and DEC
-				msg = SUB_or_DEC(line, var_map);
+				otherFound = true;
+				if (!SUB_or_DEC(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("*")) {	// MUL
-				msg = MUL_(line, var_map);
+				otherFound = true;
+				if (!MUL_(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare(">")) {	// COMP (gt output)
-				msg = COMP_gt(line, var_map);
+				otherFound = true;
+				if (!COMP_gt(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("<")) {	// COMP (lt output)
-				msg = COMP_lt(line, var_map);
+				otherFound = true;
+				if (!COMP_lt(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("==")) {// COMP (eq output)
-				msg = COMP_eq(line, var_map);
+				otherFound = true;
+				if (!COMP_eq(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("?") || 
 				     !token.compare(":")) {	// MUX2x1
-				msg = MUX2x1_(line, var_map);
+				otherFound = true;
+				if (!MUX2x1_(line, var_map))
+					return 1;
 				break;
 			}
-			else if (!token.compare("<<")) { // SHR
-				msg = SHR_(line, var_map);
+			else if (!token.compare(">>")) { // SHR
+				otherFound = true;
+				if (!SHR_(line, var_map))
+					return 1;
 				break;
 			}
-			else if (!token.compare(">>")) { // SHL
-				msg = SHL_(line, var_map);
+			else if (!token.compare("<<")) { // SHL
+				otherFound = true;
+				if (!SHL_(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("/")) {	// DIV
-				msg = DIV_(line, var_map);
+				otherFound = true;
+				if (!DIV_(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("%")) {	// MOD
-				msg = MOD_(line, var_map);
+				otherFound = true;
+				if (!MOD_(line, var_map))
+					return 1;
 				break;
 			}
 			else if (!token.compare("//")) { // COMMENT!!!
+				otherFound = true;
 				break;
 			}
 			else if (!token.compare("input")) {	// input variables
+				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
+				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next 
 			}
 			else if (!token.compare("output")) { // output variables
+				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
+				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else if (!token.compare("wire")) {	// wire variables
+				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
+				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else if (!token.compare("register")) { // register variables
+				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
+				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else {
@@ -124,9 +153,10 @@ int main(int argc, char *argv[])
 				msg = "";
 			}
 
-			if (eqFound)
-				msg = REG_(line, var_map);
 		}
+		if (eqFound && !otherFound)
+			if (!REG_(line, var_map))
+				return 1;
 
 		if (errorFlag != 0) {
 			cerr << errorMsg[errorFlag];
