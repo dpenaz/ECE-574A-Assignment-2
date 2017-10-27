@@ -193,8 +193,41 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 		return error;
 	}
 										
+	string outstr;
+	if (!func.compare("input"))
+		outstr = "input";
+	else if (!func.compare("output"))
+		outstr = "output";
+	else if (!func.compare("wire"))
+		outstr = "wire";
+	else if (!func.compare("register")) { // TBD
+		cerr << "Error: register not implemented yet..." << endl;
+		return 3;
+	}
+	else {
+		cerr << "Error: unknown func: '" << func << "' in line " << endl << line << endl;
+		return 1;
+	}
+	if (!type.compare("Int1") || !type.compare("UInt1"))
+		outstr = outstr;
+	else if (!type.compare("Int2") || !type.compare("UInt2"))
+		outstr = outstr + "[1:0] ";
+	else if (!type.compare("Int8") || !type.compare("UInt8"))
+		outstr = outstr + "[7:0] ";
+	else if (!type.compare("Int16") || !type.compare("UInt16"))
+		outstr = outstr + "[15:0] ";
+	else if (!type.compare("Int32") || !type.compare("UInt32"))
+		outstr = outstr + "[31:0] ";
+	else if (!type.compare("Int64") || !type.compare("UInt64"))
+		outstr = outstr + "[63:0] ";
+	else {
+		cerr << "Error: unknown type: '" << type << "' in line: " << endl << line << endl;
+		return 2;
+	}
+
 	while (iss >> token)	// grab all tokens after input
 	{
+		outstr = outstr + token;
 		if (token.back() == ',')
 			token.pop_back();
 		vector<string> newVector;
@@ -202,6 +235,11 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 		newVector.push_back(type);
 		my_map[token] = newVector;
 	}
+	if (outstr.back() == ',') {
+		cerr << "Error: expected another variable in line:" << endl << line << endl;
+		return 4;
+	}
+	outfile << outstr << ";" << endl;
 	return 0;
 }
 

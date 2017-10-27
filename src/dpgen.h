@@ -2,8 +2,10 @@
 
 string dataTypes[12] = {"Int1", "UInt1", "Int2", "UInt2", "Int8", "UInt8",
 						"Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64" };
-string errorMsg[3] = {"","ERROR: Invalid Format Detected in netlistFile",
-					  "ERROR: Invalid Type Provided in netlistFile" };
+string errorMsg[5] = {"","ERROR: Invalid Format Detected in netlistFile",
+					  "ERROR: Invalid Type Provided in netlistFile",
+                      "ERROR: Not implemented yet",
+	                  "ERROR: Too many commas"};
 
 bool checkType(string type);
 bool checkKey(string key, const map<string, vector<string>> &my_map);
