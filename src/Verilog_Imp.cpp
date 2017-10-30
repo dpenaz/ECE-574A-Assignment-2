@@ -28,7 +28,14 @@ bool is_input(string sym, const map<string, vector<string>> &my_map)
 	return !symFunc.compare("input");
 }
 
-unsigned int numAdd = 0, numSub = 0, numMod = 0, numDiv = 0, numShl = 0, numShr = 0, numComp = 0, numMul = 0, numMux = 0, numReg = 0;
+bool is_register(string sym, const map<string, vector<string>> &my_map)
+{
+	string symFunc = my_map.find(sym)->second[0];
+	return !symFunc.compare("register");
+}
+
+
+unsigned int numInc = 0, numDec = 0, numAdd = 0, numSub = 0, numMod = 0, numDiv = 0, numShl = 0, numShr = 0, numComp = 0, numMul = 0, numMux = 0, numReg = 0;
 
 bool assign_op_result(string op, string line, const map<string, vector<string>> &my_map)
 {
@@ -63,13 +70,20 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	// IN1
 	iss >> curSym;
 
-	if (!checkKey(curSym, my_map)) {
-		cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
-		return false;
+	bool regout1 = false;
+	if (!checkKey(curSym + "_out", my_map)) {
+		if (!checkKey(curSym, my_map)) {
+			cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
+			return false;
+		}
+		else if (!is_input(curSym, my_map) && !is_wire(curSym, my_map)) {
+			cerr << "Error: " << curSym << " is not an input or a wire in following line:" << endl << line << endl;
+			return false;
+		}
 	}
-	else if (!is_input(curSym, my_map) && !is_wire(curSym,my_map)) {
-		cerr << "Error: " << curSym << " is not an input or a wire in following line:" << endl << line << endl;
-		return false;
+	else {
+		curSym = curSym + "_out";
+		regout1 = true;
 	}
 	in1 = curSym;
 
@@ -84,13 +98,22 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	// IN2
 	iss >> curSym;
 
-	if (!checkKey(curSym, my_map)) {
-		cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
-		return false;
+	bool regout2 = false;
+	if (!checkKey(curSym + "_out", my_map)) {
+		if (curSym.compare("1")) {
+			if (!checkKey(curSym, my_map)) {
+				cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
+				return false;
+			}
+			else if (!is_input(curSym, my_map) && !is_wire(curSym, my_map)) {
+				cerr << "Error: " << curSym << " is not an input or a wire in following line:" << endl << line << endl;
+				return false;
+			}
+		}
 	}
-	else if (!is_input(curSym, my_map) && !is_wire(curSym,my_map)) {
-		cerr << "Error: " << curSym << " is not an input or a wire in following line:" << endl << line << endl;
-		return false;
+	else {
+		curSym = curSym + "_out";
+		regout2 = true;
 	}
 	in2 = curSym;
 
@@ -104,10 +127,18 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	string outstr;
 	bool gt = false, lt = false, eq = false;
 
-	if (!op.compare("+"))
-		outstr = "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
-	else if (!op.compare("-"))
-		outstr = "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
+	if (!op.compare("+")) {
+		if (!in2.compare("1"))
+			outstr = "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
+		else
+			outstr = "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
+	}
+	else if (!op.compare("-")) {
+		if (!in2.compare("1"))
+			outstr = "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
+		else
+			outstr = "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
+	}
 	else if (!op.compare("%"))
 		outstr = "MOD#(" + to_string(bitSize) + ") Mod_" + to_string(++numMod);
 	else if (!op.compare("/"))
@@ -141,6 +172,8 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 		outstr = outstr + "(" + in1 + "," + in2 + ",," + out + ",);";
 	else if (eq)
 		outstr = outstr + "(" + in1 + "," + in2 + ",,," + out + ");";
+	else if (!in2.compare("1"))
+		outstr = outstr + "(" + in1 + "," + out + ");";
 	else
 		outstr = outstr + "(" + in1 + "," + in2 + "," + out + ");";
 
@@ -210,13 +243,20 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 	// OUT
 	iss >> curSym;
 
-	if (!checkKey(curSym, my_map)) {
-		cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
-		return false;
+	bool isreg = false;
+
+	if (is_register(curSym, my_map)) {
+		isreg = true;
 	}
-	else if (!is_output(curSym, my_map)) {
-		cerr << "Error: '" << curSym << "' is not an output in following line:" << endl << line << endl;
-		return false;
+	else {
+		if (!checkKey(curSym, my_map)) {
+			cerr << "Error: unexpected symbol '" << curSym << "' in following line:" << endl << line << endl;
+			return false;
+		}
+		if (!is_output(curSym, my_map)) {
+			cerr << "Error: '" << curSym << "' is not an output or register in following line:" << endl << line << endl;
+			return false;
+		}
 	}
 
 	out = curSym;
@@ -249,7 +289,10 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
-	outfile << "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
+	if (isreg)
+		outfile << "REG#(" + to_string(bitSize) + ") " << out << "(" << in << "," << out << "_out,clk,rst);" << endl;
+	else
+		outfile << "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
 	regFound = true;
 
 	return true;
@@ -347,7 +390,7 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
-	outfile << "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in2 << "," << in3 << "," << in1 << ");" << endl;
+	outfile << "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
 
 	return true;
 }

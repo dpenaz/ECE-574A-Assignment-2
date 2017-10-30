@@ -21,13 +21,13 @@ int main(int argc, char *argv[])
 
 	ifstream infile(argv[1]);
 	if (infile.fail()) {
-		cerr << "Input file " << argv[1] << "failed to open" << endl;
+		cerr << "Input file " << argv[1] << " failed to open" << endl;
 		return 1;
 	}
 	ofstream finalOutFile;
 	finalOutFile.open(argv[2]);
 	if (finalOutFile.fail()) {
-		cerr << "Output file " << argv[2] << "failed to open" << endl;
+		cerr << "Output file " << argv[2] << " failed to open" << endl;
 		return 1;
 	}
 	outfile.open("temp.txt");
@@ -194,13 +194,17 @@ void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vecto
 			if(var.size() > 0)
 				var += ", " + it->first;	// mult variables
 			else
-				var += it->first + ", ";	// first variable
+				var += it->first;	// first variable
 		}
 	}
 	if (regFound)
 		var += ", clk, rst";
 
-	finalOutFile << "module " + name + "(" + var + ");" << endl;
+	if (regFound)
+		finalOutFile << "module " + name + "(" + var + ");" << endl << "input clk, rst;" << endl;
+	else
+		finalOutFile << "module " + name + "(" + var + ");" << endl;
+
 
 	for (string line; getline(infile, line);)	// Pass through all lines of code
 	{
@@ -230,6 +234,7 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 		return error;
 	}
 										
+	bool reg = false;
 	string outstr;
 	if (!func.compare("input"))
 		outstr = "input";
@@ -238,15 +243,15 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 	else if (!func.compare("wire"))
 		outstr = "wire";
 	else if (!func.compare("register")) { // TBD
-		cerr << "Error: register not implemented yet..." << endl;
-		return 3;
+		outstr = "wire";
+		reg = true;
 	}
 	else {
 		cerr << "Error: unknown func: '" << func << "' in line " << endl << line << endl;
 		return 1;
 	}
 	if (!type.compare("Int1") || !type.compare("UInt1"))
-		outstr = outstr;
+		outstr = outstr + " ";
 	else if (!type.compare("Int2") || !type.compare("UInt2"))
 		outstr = outstr + "[1:0] ";
 	else if (!type.compare("Int8") || !type.compare("UInt8"))
@@ -264,11 +269,25 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 
 	while (iss >> token)	// grab all tokens after input
 	{
+		if (reg) {
+			string rtok = token;
+			if (token.back() == ',') {
+				token.pop_back();
+				rtok = token;
+				token.append("_out,");
+			}
+			else
+				token.append("_out");
+			vector<string> newVector2;
+			newVector2.push_back("register");
+			newVector2.push_back(type);
+			my_map[rtok] = newVector2;
+		}
 		outstr = outstr + token;
 		if (token.back() == ',')
 			token.pop_back();
 		vector<string> newVector;
-		newVector.push_back(func);
+		newVector.push_back(reg ? "wire": func);
 		newVector.push_back(type);
 		my_map[token] = newVector;
 	}
