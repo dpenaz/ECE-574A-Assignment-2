@@ -10,6 +10,7 @@
 using namespace std;
 
 ofstream outfile;
+bool regFound;
 
 int main(int argc, char *argv[])
 {
@@ -23,12 +24,15 @@ int main(int argc, char *argv[])
 		cerr << "Input file " << argv[1] << "failed to open" << endl;
 		return 1;
 	}
-	outfile.open(argv[2]);
-	if (outfile.fail()) {
+	ofstream finalOutFile;
+	finalOutFile.open(argv[2]);
+	if (finalOutFile.fail()) {
 		cerr << "Output file " << argv[2] << "failed to open" << endl;
 		return 1;
 	}
+	outfile.open("temp.txt");
 
+	regFound = false;
 	string msg = "";
 	string type;
 	string token;
@@ -167,10 +171,43 @@ int main(int argc, char *argv[])
 			outfile << msg;
 	} 
 
+	outfile << "endmodule";  //close of module
+
 	infile.close();
 	outfile.close();
 
+	topModuleWrite(finalOutFile, argv[2], var_map);
+	finalOutFile.close();
+
 	return 0;
+}
+
+
+void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vector<string>> &my_map)
+{
+	ifstream infile("temp.txt");
+	string var = "";
+	for (map<string, vector<string>>::const_iterator it = my_map.begin(); it != my_map.end(); ++it) {
+		if (!it->second[0].compare("input") ||
+			!it->second[0].compare("output"))
+		{
+			if(var.size() > 0)
+				var += ", " + it->first;	// mult variables
+			else
+				var += it->first + ", ";	// first variable
+		}
+	}
+	if (regFound)
+		var += ", clk, rst";
+
+	finalOutFile << "module " + name + "(" + var + ");" << endl;
+
+	for (string line; getline(infile, line);)	// Pass through all lines of code
+	{
+		finalOutFile << line << endl;
+	}
+	infile.close();
+	remove("temp.txt");
 }
 
 bool checkKey(string key, const map<string, vector<string>> &my_map)
@@ -245,7 +282,7 @@ int grabVariables(string line, map<string, vector<string>> &my_map)
 
 bool checkType(string type)
 {
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 12; ++i) {
 		if (!type.compare(dataTypes[i]))
 			return true;
 	}

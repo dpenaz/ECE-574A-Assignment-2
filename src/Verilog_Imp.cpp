@@ -8,6 +8,7 @@ using namespace std;
 
 bool checkKey(string key, const map<string, vector<string>> &my_map);
 extern ofstream outfile;
+extern bool regFound;
 
 bool is_wire(string sym, const map<string, vector<string>> &my_map)
 {
@@ -33,6 +34,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 {
 	string out, in1, in2;
 	istringstream iss(line);
+	int bitSize = getLgBit(line, my_map);
 
 	string curSym;
 
@@ -103,31 +105,31 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	bool gt = false, lt = false, eq = false;
 
 	if (!op.compare("+"))
-		outstr = "ADD#? Adder_" + to_string(++numAdd);
+		outstr = "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
 	else if (!op.compare("-"))
-		outstr = "SUB#? Sub_" + to_string(++numSub);
+		outstr = "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
 	else if (!op.compare("%"))
-		outstr = "MOD#? Mod_" + to_string(++numMod);
+		outstr = "MOD#(" + to_string(bitSize) + ") Mod_" + to_string(++numMod);
 	else if (!op.compare("/"))
-		outstr = "DIV#? Div_" + to_string(++numDiv);
+		outstr = "DIV#(" + to_string(bitSize) + ") Div_" + to_string(++numDiv);
 	else if (!op.compare("<<"))
-		outstr = "SHL#? Shl_" + to_string(++numShl);
+		outstr = "SHL#(" + to_string(bitSize) + ") Shl_" + to_string(++numShl);
 	else if (!op.compare(">>"))
-		outstr = "SHR#? Shr_" + to_string(++numShr);
+		outstr = "SHR#(" + to_string(bitSize) + ") Shr_" + to_string(++numShr);
 	else if (!op.compare("==")) {
 		eq = true;
-		outstr = "COMP#? Comp_" + to_string(++numComp);
+		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare("<")) {
 		lt = true;
-		outstr = "COMP#? Comp_" + to_string(++numComp);
+		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare(">")) {
 		gt = true;
-		outstr = "COMP#? Comp_" + to_string(++numComp);
+		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare("*"))
-		outstr = "MUL#? Mul_" + to_string(++numMul);
+		outstr = "MUL#(" + to_string(bitSize) + ") Mul_" + to_string(++numMul);
 	else {
 		cerr << "Unknown operation: " << op << "in line: " << endl << line << endl;
 		return false;
@@ -201,6 +203,7 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 {
 	string out, in;
 	istringstream iss(line);
+	int bitSize = getLgBit(line, my_map);
 
 	string curSym;
 
@@ -246,7 +249,8 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
-	outfile << "REG#? Reg_" << ++numReg << "(" << in << "," << out << ",$clk,$rst);" << endl;
+	outfile << "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
+	regFound = true;
 
 	return true;
 };
@@ -255,6 +259,7 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 {
 	string out, in1, in2, in3;
 	istringstream iss(line);
+	int bitSize = getLgBit(line, my_map);
 
 	string curSym;
 
@@ -342,7 +347,36 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
-	outfile << "MUX2x1#? Mux_" << ++numMux << "(" << in2 << "," << in3 << "," << in1 << ");" << endl;
+	outfile << "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in2 << "," << in3 << "," << in1 << ");" << endl;
 
 	return true;
+}
+
+
+int getLgBit(string line, const map<string, vector<string>> &my_map)
+{
+	char curSym[20];
+	string key;
+	string type;
+	int bitSize = 0;
+	istringstream iss(line);
+
+	while (iss >> curSym)
+	{
+		if (!isalpha(curSym[0]))
+			continue;
+		key = curSym;
+		map<string, vector<string>>::const_iterator it = my_map.find(key);
+		if (it == my_map.end())
+			return 0;
+		type = it->second[1];
+		if (type[0] == 'I')
+			type.erase(0, 3);
+		else
+			type.erase(0, 4);
+
+		if (stoi(type) > bitSize)
+			bitSize = stoi(type);
+	}
+	return bitSize;
 }

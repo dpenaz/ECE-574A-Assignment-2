@@ -5,6 +5,8 @@
 
 using namespace std;
 
+int getLgBit(string line, const map<string, vector<string>> &my_map);
+
 bool Add_or_INC(string line, const map<string, vector<string>> &my_map);
 bool REG_(string line, const map<string, vector<string>> &my_map);
 bool SUB_or_DEC(string line, const map<string, vector<string>> &my_map);
