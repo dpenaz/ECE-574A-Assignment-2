@@ -5,7 +5,11 @@
 
 using namespace std;
 
+
+bool signedVar(string key, const map<string, vector<string>> &my_map);
 int getLgBit(string line, const map<string, vector<string>> &my_map);
+int getBitSize(string output, const map<string, vector<string>> &my_map);
+void bitManip(int bitSize, string &out, string &in1, string &in2, const map<string, vector<string>> &my_map);
 
 bool Add_or_INC(string line, const map<string, vector<string>> &my_map);
 bool REG_(string line, const map<string, vector<string>> &my_map);

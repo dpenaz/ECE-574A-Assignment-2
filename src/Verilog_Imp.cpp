@@ -40,8 +40,9 @@ unsigned int numInc = 0, numDec = 0, numAdd = 0, numSub = 0, numMod = 0, numDiv 
 bool assign_op_result(string op, string line, const map<string, vector<string>> &my_map)
 {
 	string out, in1, in2;
+	string prefix = "";
 	istringstream iss(line);
-	int bitSize = getLgBit(line, my_map);
+	int bitSize;
 
 	string curSym;
 
@@ -58,7 +59,9 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	}
 
 	out = curSym;
-
+	bitSize = getBitSize(out, my_map);
+	if (signedVar(out, my_map))	//determine signed or unsigned
+		prefix = "S";
 	// =
 	iss >> curSym;
 
@@ -124,43 +127,48 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 		return false;
 	}
 
+	bitManip(bitSize,out, in1, in2, my_map);
+
 	string outstr;
 	bool gt = false, lt = false, eq = false;
 
 	if (!op.compare("+")) {
 		if (!in2.compare("1"))
-			outstr = "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
+			outstr = prefix + "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
 		else
-			outstr = "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
+			outstr = prefix + "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
 	}
 	else if (!op.compare("-")) {
 		if (!in2.compare("1"))
-			outstr = "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
+			outstr = prefix + "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
 		else
-			outstr = "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
+			outstr = prefix + "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
 	}
 	else if (!op.compare("%"))
-		outstr = "MOD#(" + to_string(bitSize) + ") Mod_" + to_string(++numMod);
+		outstr = prefix + "MOD#(" + to_string(bitSize) + ") Mod_" + to_string(++numMod);
 	else if (!op.compare("/"))
-		outstr = "DIV#(" + to_string(bitSize) + ") Div_" + to_string(++numDiv);
+		outstr = prefix + "DIV#(" + to_string(bitSize) + ") Div_" + to_string(++numDiv);
 	else if (!op.compare("<<"))
-		outstr = "SHL#(" + to_string(bitSize) + ") Shl_" + to_string(++numShl);
+		outstr = prefix + "SHL#(" + to_string(bitSize) + ") Shl_" + to_string(++numShl);
 	else if (!op.compare(">>"))
-		outstr = "SHR#(" + to_string(bitSize) + ") Shr_" + to_string(++numShr);
+		outstr = prefix + "SHR#(" + to_string(bitSize) + ") Shr_" + to_string(++numShr);
 	else if (!op.compare("==")) {
 		eq = true;
-		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
+		bitSize = getLgBit(line, my_map);
+		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare("<")) {
 		lt = true;
-		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
+		bitSize = getLgBit(line, my_map);
+		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare(">")) {
 		gt = true;
-		outstr = "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
+		bitSize = getLgBit(line, my_map);
+		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare("*"))
-		outstr = "MUL#(" + to_string(bitSize) + ") Mul_" + to_string(++numMul);
+		outstr = prefix + "MUL#(" + to_string(bitSize) + ") Mul_" + to_string(++numMul);
 	else {
 		cerr << "Unknown operation: " << op << "in line: " << endl << line << endl;
 		return false;
@@ -235,13 +243,15 @@ bool MUL_(string line, const map<string, vector<string>> &my_map)
 bool REG_(string line, const map<string, vector<string>> &my_map)
 {
 	string out, in;
+	string prefix = "";
 	istringstream iss(line);
-	int bitSize = getLgBit(line, my_map);
+	int bitSize;
 
 	string curSym;
 
 	// OUT
 	iss >> curSym;
+	
 
 	bool isreg = false;
 
@@ -260,6 +270,9 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 	}
 
 	out = curSym;
+	bitSize = getBitSize(out, my_map);
+	if (signedVar(out, my_map))	//determine signed or unsigned
+		prefix = "S";
 
 	// =
 	iss >> curSym;
@@ -290,9 +303,9 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 	}
 
 	if (isreg)
-		outfile << "REG#(" + to_string(bitSize) + ") " << out << "(" << in << "," << out << "_out,clk,rst);" << endl;
+		outfile << prefix + "REG#(" + to_string(bitSize) + ") " << out << "(" << in << "," << out << "_out,clk,rst);" << endl;
 	else
-		outfile << "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
+		outfile << prefix + "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
 	regFound = true;
 
 	return true;
@@ -301,8 +314,9 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 {
 	string out, in1, in2, in3;
+	string prefix = "";
 	istringstream iss(line);
-	int bitSize = getLgBit(line, my_map);
+	int bitSize;
 
 	string curSym;
 
@@ -319,6 +333,9 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 	}
 
 	out = curSym;
+	bitSize = getBitSize(out, my_map);
+	if (signedVar(out, my_map))	//determine signed or unsigned
+		prefix = "S";
 
 	// =
 	iss >> curSym;
@@ -390,11 +407,27 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
-	outfile << "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
+	outfile << prefix + "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
 
 	return true;
 }
 
+
+int getBitSize(string output, const map<string, vector<string>> &my_map)
+{
+	string type;
+
+	map<string, vector<string>>::const_iterator it = my_map.find(output);
+	if (it == my_map.end())
+		return 0;
+	type = it->second[1];
+	if (type[0] == 'I')
+		type.erase(0, 3);
+	else
+		type.erase(0, 4);
+
+	return stoi(type);
+}
 
 int getLgBit(string line, const map<string, vector<string>> &my_map)
 {
@@ -403,7 +436,7 @@ int getLgBit(string line, const map<string, vector<string>> &my_map)
 	string type;
 	int bitSize = 0;
 	istringstream iss(line);
-
+	iss >> curSym;  // throw away output only want largest input for comp
 	while (iss >> curSym)
 	{
 		if (!isalpha(curSym[0]))
@@ -422,4 +455,27 @@ int getLgBit(string line, const map<string, vector<string>> &my_map)
 			bitSize = stoi(type);
 	}
 	return bitSize;
+}
+
+bool signedVar(string key, const map<string, vector<string>> &my_map)
+{
+	map<string, vector<string>>::const_iterator it = my_map.find(key);
+	if (it == my_map.end())
+		return false;
+	string type = it->second[1];
+	if (type[0] == 'I')
+		return true;
+	else
+		return false;
+}
+
+void bitManip(int bitSize, string &out, string &in1, string &in2, const map<string, vector<string>> &my_map)
+{
+	map<string, vector<string>>::const_iterator it_out = my_map.find(out);
+	map<string, vector<string>>::const_iterator it_in1 = my_map.find(in1);
+	map<string, vector<string>>::const_iterator it_in2 = my_map.find(in2);
+	if (it_out->second[1][0] == 'I')
+	{
+
+	}
 }
