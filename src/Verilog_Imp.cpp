@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <tuple>
 #include "Verilog_Imp.h"
 
 using namespace std;
@@ -9,28 +10,51 @@ using namespace std;
 bool checkKey(string key, const map<string, vector<string>> &my_map);
 extern ofstream outfile;
 extern bool regFound;
+extern map<int, tuple<string, vector<string>,string>> graph;
+
+int numGraphElems = 0;
 
 bool is_wire(string sym, const map<string, vector<string>> &my_map)
 {
-	string symFunc = my_map.find(sym)->second[0];
+	auto it = my_map.find(sym);
+	if (it == my_map.end()) {
+		cerr << "Error: '" << sym << "' is not a variable";
+		return false;
+	}
+	string symFunc = it->second[0];
 	return !symFunc.compare("wire");
 }
 
 bool is_output(string sym, const map<string, vector<string>> &my_map)
 {
-	string symFunc = my_map.find(sym)->second[0];
+	auto it = my_map.find(sym);
+	if (it == my_map.end()) {
+		cerr << "Error: '" << sym << "' is not a variable";
+		return false;
+	}
+	string symFunc = it->second[0];
 	return !symFunc.compare("output");
 }
 
 bool is_input(string sym, const map<string, vector<string>> &my_map)
 {
-	string symFunc = my_map.find(sym)->second[0];
+	auto it = my_map.find(sym);
+	if (it == my_map.end()) {
+		cerr << "Error: '" << sym << "' is not a variable";
+		return false;
+	}
+	string symFunc = it->second[0];
 	return !symFunc.compare("input");
 }
 
 bool is_register(string sym, const map<string, vector<string>> &my_map)
 {
-	string symFunc = my_map.find(sym)->second[0];
+	auto it = my_map.find(sym);
+	if (it == my_map.end()) {
+		cerr << "Error: '" << sym << "' is not a variable";
+		return false;
+	}
+	string symFunc = it->second[0];
 	return !symFunc.compare("register");
 }
 
@@ -129,50 +153,78 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 
 	bitManip(bitSize,out, in1, in2, my_map);
 
-	string outstr;
-	bool gt = false, lt = false, eq = false;
+	string outstr, opstr;
+	bool gt = false, lt = false, eq = false, add = false, sub = false;
 
 	if (!op.compare("+")) {
-		if (!in2.compare("1"))
+		add = true;
+		if (!in2.compare("1")) {
+			opstr = "INC";
 			outstr = prefix + "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
-		else
+		}
+		else {
+			opstr = "ADD";
 			outstr = prefix + "ADD#(" + to_string(bitSize) + ") Adder_" + to_string(++numAdd);
+		}
 	}
 	else if (!op.compare("-")) {
-		if (!in2.compare("1"))
+		sub = true;
+		if (!in2.compare("1")) {
+			opstr = "DEC";
 			outstr = prefix + "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
-		else
+		}
+		else {
+			opstr = "SUB";
 			outstr = prefix + "SUB#(" + to_string(bitSize) + ") Sub_" + to_string(++numSub);
+		}
 	}
-	else if (!op.compare("%"))
+	else if (!op.compare("%")) {
+		opstr = "MOD";
 		outstr = prefix + "MOD#(" + to_string(bitSize) + ") Mod_" + to_string(++numMod);
-	else if (!op.compare("/"))
+	}
+	else if (!op.compare("/")) {
+		opstr = "DIV";
 		outstr = prefix + "DIV#(" + to_string(bitSize) + ") Div_" + to_string(++numDiv);
-	else if (!op.compare("<<"))
+	}
+	else if (!op.compare("<<")) {
+		opstr = "SHL";
 		outstr = prefix + "SHL#(" + to_string(bitSize) + ") Shl_" + to_string(++numShl);
-	else if (!op.compare(">>"))
+	}
+	else if (!op.compare(">>")) {
+		opstr = "SHR";
 		outstr = prefix + "SHR#(" + to_string(bitSize) + ") Shr_" + to_string(++numShr);
+	}
 	else if (!op.compare("==")) {
 		eq = true;
 		bitSize = getLgBit(line, my_map);
+		opstr = "COMP";
 		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare("<")) {
 		lt = true;
 		bitSize = getLgBit(line, my_map);
+		opstr = "COMP";
 		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
 	else if (!op.compare(">")) {
 		gt = true;
 		bitSize = getLgBit(line, my_map);
+		opstr = "COMP";
 		outstr = prefix + "COMP#(" + to_string(bitSize) + ") Comp_" + to_string(++numComp);
 	}
-	else if (!op.compare("*"))
+	else if (!op.compare("*")) {
+		opstr = "MUL";
 		outstr = prefix + "MUL#(" + to_string(bitSize) + ") Mul_" + to_string(++numMul);
+	}
 	else {
 		cerr << "Unknown operation: " << op << "in line: " << endl << line << endl;
 		return false;
 	}
+
+	if ((add || sub) && !in2.compare("1"))
+		graph[numGraphElems++] = {opstr + to_string(bitSize), {in1}, out };
+	else
+		graph[numGraphElems++] = {opstr + to_string(bitSize), {in1, in2}, out };
 
 	if (gt)
 		outstr = outstr + "(" + in1 + "," + in2 + "," + out + ",,);";
@@ -306,6 +358,7 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 		outfile << prefix + "REG#(" + to_string(bitSize) + ") " << out << "(" << in << "," << out << "_out,clk,rst);" << endl;
 	else
 		outfile << prefix + "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
+	graph[numGraphElems++] = {"REG" + to_string(bitSize), {in}, out };
 	regFound = true;
 
 	return true;
@@ -407,6 +460,7 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 		return false;
 	}
 
+	graph[numGraphElems++] = {"MUX2x1" + to_string(bitSize), {in3,in2,in1},out };
 	outfile << prefix + "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
 
 	return true;

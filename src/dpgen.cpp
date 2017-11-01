@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <tuple>
 #include "Verilog_Imp.h"
 #include "dpgen.h"
 
@@ -11,6 +12,10 @@ using namespace std;
 
 ofstream outfile;
 bool regFound;
+
+map<int, tuple<string, vector<string>,string>> graph;
+
+const map<string, double> latencies = { {"REG1", 2.616}, {"REG2", 2.644} }; //etc..
 
 int main(int argc, char *argv[])
 {
@@ -126,25 +131,21 @@ int main(int argc, char *argv[])
 			else if (!token.compare("input")) {	// input variables
 				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
-				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next 
 			}
 			else if (!token.compare("output")) { // output variables
 				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
-				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else if (!token.compare("wire")) {	// wire variables
 				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
-				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else if (!token.compare("register")) { // register variables
 				otherFound = true;
 				errorFlag = grabVariables(line, var_map);
-				// add output of corresponding verilog
 				break;	// finished grabbing line continue to next line
 			}
 			else {
