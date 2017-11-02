@@ -7,16 +7,16 @@
 
 using namespace std;
 
-bool checkKey(string key, const map<string, vector<string>> &my_map);
+bool checkKey(string key, const map<string, vector<string> > &my_map);
 extern ofstream outfile;
 extern bool regFound;
-extern map<int, tuple<string, vector<string>,string>> graph;
+extern map<int, tuple<string, vector<string>,string> > graph;
 
 int numGraphElems = 0;
 
-bool is_wire(string sym, const map<string, vector<string>> &my_map)
+bool is_wire(string sym, const map<string, vector<string> > &my_map)
 {
-	auto it = my_map.find(sym);
+	map<string, vector<string> >::const_iterator it = my_map.find(sym);
 	if (it == my_map.end()) {
 		cerr << "Error: '" << sym << "' is not a variable";
 		return false;
@@ -25,9 +25,9 @@ bool is_wire(string sym, const map<string, vector<string>> &my_map)
 	return !symFunc.compare("wire");
 }
 
-bool is_output(string sym, const map<string, vector<string>> &my_map)
+bool is_output(string sym, const map<string, vector<string> > &my_map)
 {
-	auto it = my_map.find(sym);
+	map<string, vector<string> >::const_iterator it = my_map.find(sym);
 	if (it == my_map.end()) {
 		cerr << "Error: '" << sym << "' is not a variable";
 		return false;
@@ -36,9 +36,9 @@ bool is_output(string sym, const map<string, vector<string>> &my_map)
 	return !symFunc.compare("output");
 }
 
-bool is_input(string sym, const map<string, vector<string>> &my_map)
+bool is_input(string sym, const map<string, vector<string> > &my_map)
 {
-	auto it = my_map.find(sym);
+	map<string, vector<string> >::const_iterator it = my_map.find(sym);
 	if (it == my_map.end()) {
 		cerr << "Error: '" << sym << "' is not a variable";
 		return false;
@@ -47,9 +47,9 @@ bool is_input(string sym, const map<string, vector<string>> &my_map)
 	return !symFunc.compare("input");
 }
 
-bool is_register(string sym, const map<string, vector<string>> &my_map)
+bool is_register(string sym, const map<string, vector<string> > &my_map)
 {
-	auto it = my_map.find(sym);
+	map<string, vector<string> >::const_iterator it = my_map.find(sym);
 	if (it == my_map.end()) {
 		cerr << "Error: '" << sym << "' is not a variable";
 		return false;
@@ -61,7 +61,7 @@ bool is_register(string sym, const map<string, vector<string>> &my_map)
 
 unsigned int numInc = 0, numDec = 0, numAdd = 0, numSub = 0, numMod = 0, numDiv = 0, numShl = 0, numShr = 0, numComp = 0, numMul = 0, numMux = 0, numReg = 0;
 
-bool assign_op_result(string op, string line, const map<string, vector<string>> &my_map)
+bool assign_op_result(string op, string line, const map<string, vector<string> > &my_map)
 {
 	string out, in1, in2;
 	string prefix = "";
@@ -97,7 +97,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	// IN1
 	iss >> curSym;
 
-	bool regout1 = false;
+	//bool regout1 = false;
 	if (!checkKey(curSym + "_out", my_map)) {
 		if (!checkKey(curSym, my_map)) {
 			cerr << "Error: unexpected symbol: " << curSym << " in following line:" << endl << line << endl;
@@ -110,7 +110,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	}
 	else {
 		curSym = curSym + "_out";
-		regout1 = true;
+	//	regout1 = true;
 	}
 	in1 = curSym;
 
@@ -125,7 +125,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	// IN2
 	iss >> curSym;
 
-	bool regout2 = false;
+	//bool regout2 = false;
 	if (!checkKey(curSym + "_out", my_map)) {
 		if (curSym.compare("1")) {
 			if (!checkKey(curSym, my_map)) {
@@ -140,7 +140,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	}
 	else {
 		curSym = curSym + "_out";
-		regout2 = true;
+	//	regout2 = true;
 	}
 	in2 = curSym;
 
@@ -151,13 +151,15 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 		return false;
 	}
 
-	bitManip(bitSize,out, in1, in2, my_map);
+	bitManip(in1, my_map);
+	bitManip(in2, my_map);
 
 	string outstr, opstr;
-	bool gt = false, lt = false, eq = false, add = false, sub = false;
+	bool gt = false, lt = false, eq = false;
+	// bool add = false, sub = false;
 
 	if (!op.compare("+")) {
-		add = true;
+		//add = true;
 		if (!in2.compare("1")) {
 			opstr = "INC";
 			outstr = prefix + "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
@@ -168,7 +170,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 		}
 	}
 	else if (!op.compare("-")) {
-		sub = true;
+		//sub = true;
 		if (!in2.compare("1")) {
 			opstr = "DEC";
 			outstr = prefix + "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
@@ -220,12 +222,12 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 		cerr << "Unknown operation: " << op << "in line: " << endl << line << endl;
 		return false;
 	}
-
+/*
 	if ((add || sub) && !in2.compare("1"))
-		graph[numGraphElems++] = {opstr + to_string(bitSize), {in1}, out };
+		//graph[numGraphElems++] = {opstr + to_string(bitSize), {in1}, out };
 	else
-		graph[numGraphElems++] = {opstr + to_string(bitSize), {in1, in2}, out };
-
+		//graph[numGraphElems++] = {opstr + to_string(bitSize), {in1, in2}, out };
+*/
 	if (gt)
 		outstr = outstr + "(" + in1 + "," + in2 + "," + out + ",,);";
 	else if (lt)
@@ -242,57 +244,57 @@ bool assign_op_result(string op, string line, const map<string, vector<string>> 
 	return true;
 }
 
-bool Add_or_INC(string line, const map<string, vector<string>> &my_map)
+bool Add_or_INC(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("+", line, my_map);
 };
 
-bool SUB_or_DEC(string line, const map<string, vector<string>> &my_map)
+bool SUB_or_DEC(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("-", line, my_map);
 };
 
-bool MOD_(string line, const map<string, vector<string>> &my_map)
+bool MOD_(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("%", line, my_map);
 };
 
-bool DIV_(string line, const map<string, vector<string>> &my_map)
+bool DIV_(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("/", line, my_map);
 };
 
-bool SHL_(string line, const map<string, vector<string>> &my_map)
+bool SHL_(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("<<", line, my_map);
 };
 
-bool SHR_(string line, const map<string, vector<string>> &my_map)
+bool SHR_(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result(">>", line, my_map);
 };
 
-bool COMP_eq(string line, const map<string, vector<string>> &my_map)
+bool COMP_eq(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("==", line, my_map);
 };
 
-bool COMP_lt(string line, const map<string, vector<string>> &my_map)
+bool COMP_lt(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("<", line, my_map);
 };
 
-bool COMP_gt(string line, const map<string, vector<string>> &my_map)
+bool COMP_gt(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result(">", line, my_map);
 };
 
-bool MUL_(string line, const map<string, vector<string>> &my_map)
+bool MUL_(string line, const map<string, vector<string> > &my_map)
 {
 	return assign_op_result("*", line, my_map);
 };
 
-bool REG_(string line, const map<string, vector<string>> &my_map)
+bool REG_(string line, const map<string, vector<string> > &my_map)
 {
 	string out, in;
 	string prefix = "";
@@ -353,18 +355,19 @@ bool REG_(string line, const map<string, vector<string>> &my_map)
 		cerr << "Error: expected end of line, not '" << curSym << "' in following line:" << endl << line << endl;
 		return false;
 	}
-
+	bitManip(in, my_map);
 	if (isreg)
 		outfile << prefix + "REG#(" + to_string(bitSize) + ") " << out << "(" << in << "," << out << "_out,clk,rst);" << endl;
 	else
 		outfile << prefix + "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
-	graph[numGraphElems++] = {"REG" + to_string(bitSize), {in}, out };
+
+	//graph[numGraphElems++] = { "REG" + to_string(bitSize), {in}, out };
 	regFound = true;
 
 	return true;
 };
 
-bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
+bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 {
 	string out, in1, in2, in3;
 	string prefix = "";
@@ -459,19 +462,22 @@ bool MUX2x1_(string line, const map<string, vector<string>> &my_map)
 		cerr << "Error: expected end of line, not '" << curSym << "' in following line:" << endl << line << endl;
 		return false;
 	}
+	bitManip(in1, my_map);
+	bitManip(in2, my_map);
+	bitManip(in3, my_map);
 
-	graph[numGraphElems++] = {"MUX2x1" + to_string(bitSize), {in3,in2,in1},out };
+	//graph[numGraphElems++] = {"MUX2x1" + to_string(bitSize), {in3,in2,in1},out };
 	outfile << prefix + "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
 
 	return true;
 }
 
 
-int getBitSize(string output, const map<string, vector<string>> &my_map)
+int getBitSize(string output, const map<string, vector<string> > &my_map)
 {
 	string type;
 
-	map<string, vector<string>>::const_iterator it = my_map.find(output);
+	map<string, vector<string> >::const_iterator it = my_map.find(output);
 	if (it == my_map.end())
 		return 0;
 	type = it->second[1];
@@ -483,7 +489,7 @@ int getBitSize(string output, const map<string, vector<string>> &my_map)
 	return stoi(type);
 }
 
-int getLgBit(string line, const map<string, vector<string>> &my_map)
+int getLgBit(string line, const map<string, vector<string> > &my_map)
 {
 	char curSym[20];
 	string key;
@@ -496,7 +502,7 @@ int getLgBit(string line, const map<string, vector<string>> &my_map)
 		if (!isalpha(curSym[0]))
 			continue;
 		key = curSym;
-		map<string, vector<string>>::const_iterator it = my_map.find(key);
+		map<string, vector<string> >::const_iterator it = my_map.find(key);
 		if (it == my_map.end())
 			return 0;
 		type = it->second[1];
@@ -511,9 +517,9 @@ int getLgBit(string line, const map<string, vector<string>> &my_map)
 	return bitSize;
 }
 
-bool signedVar(string key, const map<string, vector<string>> &my_map)
+bool signedVar(string key, const map<string, vector<string> > &my_map)
 {
-	map<string, vector<string>>::const_iterator it = my_map.find(key);
+	map<string, vector<string> >::const_iterator it = my_map.find(key);
 	if (it == my_map.end())
 		return false;
 	string type = it->second[1];
@@ -523,13 +529,13 @@ bool signedVar(string key, const map<string, vector<string>> &my_map)
 		return false;
 }
 
-void bitManip(int bitSize, string &out, string &in1, string &in2, const map<string, vector<string>> &my_map)
+void bitManip(string &in1, const map<string, vector<string> > &my_map)
 {
-	map<string, vector<string>>::const_iterator it_out = my_map.find(out);
-	map<string, vector<string>>::const_iterator it_in1 = my_map.find(in1);
-	map<string, vector<string>>::const_iterator it_in2 = my_map.find(in2);
-	if (it_out->second[1][0] == 'I')
+	if (!in1.empty())
 	{
-
+		if (signedVar(in1, my_map))
+			in1 = "$signed(" + in1 + ")";
+		else
+			in1 = "$unsigned(" + in1 + ")";
 	}
 }

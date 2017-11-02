@@ -13,7 +13,7 @@ using namespace std;
 ofstream outfile;
 bool regFound;
 
-map<int, tuple<string, vector<string>,string>> graph;
+map<int, tuple<string, vector<string>,string> > graph;
 
 const map<string, double> latencies = { {"REG1", 2.616}, {"REG2", 2.644} }; //etc..
 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 	int errorFlag = 0;
 
-	map<string, vector<string>> var_map;	// Store variable info ex: variables[name][type, input/output/wire]
+	map<string, vector<string> > var_map;	// Store variable info ex: variables[name][type, input/output/wire]
 	vector<string> storedTokens;
 
 	for (string line; getline(infile, line);)	// Pass through all lines of code
@@ -184,11 +184,11 @@ int main(int argc, char *argv[])
 }
 
 
-void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vector<string>> &my_map)
+void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vector<string> > &my_map)
 {
 	ifstream infile("temp.txt");
 	string var = "";
-	for (map<string, vector<string>>::const_iterator it = my_map.begin(); it != my_map.end(); ++it) {
+	for (map<string, vector<string> >::const_iterator it = my_map.begin(); it != my_map.end(); ++it) {
 		if (!it->second[0].compare("input") ||
 			!it->second[0].compare("output"))
 		{
@@ -201,10 +201,12 @@ void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vecto
 	if (regFound)
 		var += ", clk, rst";
 
+	finalOutFile << "`timescale 1ns / 1ps" << endl << endl;
+
 	if (regFound)
-		finalOutFile << "module " + name + "(" + var + ");" << endl << "input clk, rst;" << endl;
+		finalOutFile << "module curcuit(" + var + ");" << endl << "input clk, rst;" << endl;
 	else
-		finalOutFile << "module " + name + "(" + var + ");" << endl;
+		finalOutFile << "module curcuit(" + var + ");" << endl;
 
 
 	for (string line; getline(infile, line);)	// Pass through all lines of code
@@ -215,12 +217,12 @@ void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vecto
 	remove("temp.txt");
 }
 
-bool checkKey(string key, const map<string, vector<string>> &my_map)
+bool checkKey(string key, const map<string, vector<string> > &my_map)
 {
 	return my_map.find(key) != my_map.end();
 }
 
-int grabVariables(string line, map<string, vector<string>> &my_map)
+int grabVariables(string line, map<string, vector<string> > &my_map)
 {
 	int error = 2;
 	string func;
