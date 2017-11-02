@@ -13,9 +13,44 @@ using namespace std;
 ofstream outfile;
 bool regFound;
 
-map<int, tuple<string, vector<string>,string> > graph;
+vector<tuple<string, vector<string>,string, bool>> graph;
+const map<string, double> latencies = {
+{"REG1", 2.616}, {"REG2", 2.644} , {"REG8", 2.879}, {"REG16",3.061}, {"REG32",3.602}, {"REG64",3.966},
+{"SREG1", 2.616}, {"SREG2", 2.644} , {"SREG8", 2.879}, {"SREG16",3.061}, {"SREG32",3.602}, {"SREG64",3.966},
 
-const map<string, double> latencies = { {"REG1", 2.616}, {"REG2", 2.644} }; //etc..
+{"ADD1", 2.704}, {"ADD2", 3.713} , {"ADD8", 4.924}, {"ADD16",5.638}, {"ADD32",7.270}, {"ADD64",9.566},
+{"SADD1", 2.704}, {"SADD2", 3.713} , {"SADD8", 4.924}, {"SADD16",5.638}, {"SADD32",7.270}, {"SADD64",9.566},
+
+{"SUB1", 3.024 }, {"SUB2", 3.412 } , {"SUB8", 4.890 }, {"SUB16",5.569 }, {"SUB32",7.253 }, {"SUB64",9.566 },
+{"SSUB1", 3.024 }, {"SSUB2", 3.412 } , {"SSUB8", 4.890 }, {"SSUB16",5.569 }, {"SSUB32",7.253 }, {"SSUB64",9.566 },
+
+{"MUL1", 2.438}, {"MUL2", 3.651 } , {"MUL8", 7.453 }, {"MUL16",7.811 }, {"MUL32",12.395 }, {"MUL64",15.354 },
+{"SMUL1", 2.438}, {"SMUL2", 3.651 } , {"SMUL8", 7.453 }, {"SMUL16",7.811 }, {"SMUL32",12.395 }, {"SMUL64",15.354 },
+
+{"COMP1", 3.031 }, {"COMP2", 3.934 } , {"COMP8", 5.949 }, {"COMP16",6.256 }, {"COMP32",7.264 }, {"COMP64",8.416 },
+{"SCOMP1", 3.031 }, {"SCOMP2", 3.934 } , {"SCOMP8", 5.949 }, {"SCOMP16",6.256 }, {"SCOMP32",7.264 }, {"SCOMP64",8.416 },
+
+{"MUX2x11", 4.083 }, {"MUX2x12", 4.115 } , {"MUX2x18", 4.815 }, {"MUX2x116",5.623 }, {"MUX2x132",8.079 }, {"MUX2x164",8.766 },
+{"SMUX2x11", 4.083 }, {"SMUX2x12", 4.115 } , {"SMUX2x18", 4.815 }, {"SMUX2x116",5.623 }, {"SMUX2x132",8.079 }, {"SMUX2x164",8.766 },
+
+{"SHR1", 3.644}, {"SHR2", 4.007 } , {"SHR8", 5.178 }, {"SHR16",6.460 }, {"SHR32",8.819 }, {"SHR64",11.095 },
+{"SSHR1", 3.644 }, {"SSHR2", 4.007 } , {"SSHR8", 5.178 }, {"SSHR16",6.460 }, {"SSHR32",8.819 }, {"SSHR64",11.095 },
+
+{"SHL1", 3.614}, {"SHL2", 3.980 } , {"SHL8", 5.152 }, {"SHL16",6.549 }, {"SHL32",8.565 }, {"SHL64",11.220 },
+{"SSHL1", 3.614 }, {"SSHL2", 3.980 } , {"SSHL8", 5.152}, {"SSHL16",6.549 }, {"SSHL32",8.565 }, {"SSHL64",11.220 },
+
+{"DIV1", 0.619 }, {"DIV2", 2.144 } , {"DIV8", 15.439 }, {"DIV16",33.093}, {"DIV32",86.312 }, {"DIV64",243.233 },
+{"SDIV1", 0.619 }, {"SDIV2", 2.144 } , {"SDIV8", 15.439 }, {"SDIV16",33.093 }, {"SDIV32",86.312 }, {"SDIV64",243.233 },
+
+{"MOD1", 0.758 }, {"MOD2", 2.149 } , {"MOD8", 16.078 }, {"MOD16",35.563 }, {"MOD32",88.142 }, {"MOD64",250.583 },
+{"SMOD1", 0.758 }, {"SMOD2", 2.1494} , {"SMOD8", 16.078 }, {"SMOD16",35.563 }, {"SMOD32",88.142}, {"SMOD64",250.583 },
+
+{"INC1", 1.792}, {"INC2", 2.218 } , {"INC8", 3.111 }, {"INC16",3.471}, {"INC32",4.347 }, {"INC64",6.200 },
+{"SINC1", 1.792}, {"SINC2", 2.218 } , {"SINC8", 3.111 }, {"SINC16",3.471 }, {"SINC32",4.347}, {"SINC64",6.200 },
+
+{"DEC1", 1.792 }, {"DEC2", 2.218 } , {"DEC8", 3.108 }, {"DEC16",3.701 }, {"DEC32",4.685 }, {"DEC64",6.503 },
+{"SDEC1", 1.792}, {"SDEC2", 2.218 } , {"SDEC8", 3.108 }, {"SDEC16",3.701 }, {"SDEC32",4.685 }, {"SDEC64",6.503 }
+};
 
 int main(int argc, char *argv[])
 {
@@ -180,6 +215,41 @@ int main(int argc, char *argv[])
 	topModuleWrite(finalOutFile, argv[2], var_map);
 	finalOutFile.close();
 
+	double max_time = 0;
+	map<string, double> graphLatencies;
+	vector<bool> scheduled;
+	for (auto var : var_map) {
+		if (!var.second[0].compare("input"))
+			graphLatencies[var.first] = 0;
+	}
+	for (auto& node : graph) {
+		if (!get<3>(node)) {
+			vector<string> vins = get<1>(node);
+			bool ready = true;
+			double max_in_time = 0;
+			//check if all inputs are ready
+			for (auto vin : vins) {
+				auto it = graphLatencies.find(vin);
+				if (it == graphLatencies.end())
+					ready = false;
+				else {
+					double t = it->second;
+					max_in_time = max_in_time > t ? max_in_time : t;
+				}
+			}
+			//if this node is ready to be scheduled
+			if (ready) {
+				//this node is now scheduled
+				get<3>(node) = true;
+				//find out time
+				double node_out_time = max_in_time + latencies.find(get<0>(node))->second;
+				max_time = max_time > node_out_time ? max_time : node_out_time;
+				graphLatencies[get<2>(node)] = node_out_time;
+			}
+		}
+	}
+
+	cout << "Critical Path: " << max_time << " ns" << endl;
 	return 0;
 }
 
@@ -204,9 +274,9 @@ void topModuleWrite(ofstream &finalOutFile, string name, const map<string, vecto
 	finalOutFile << "`timescale 1ns / 1ps" << endl << endl;
 
 	if (regFound)
-		finalOutFile << "module curcuit(" + var + ");" << endl << "input clk, rst;" << endl;
+		finalOutFile << "module circuit(" + var + ");" << endl << "input clk, rst;" << endl;
 	else
-		finalOutFile << "module curcuit(" + var + ");" << endl;
+		finalOutFile << "module circuit(" + var + ");" << endl;
 
 
 	for (string line; getline(infile, line);)	// Pass through all lines of code

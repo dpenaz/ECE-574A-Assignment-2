@@ -10,7 +10,7 @@ using namespace std;
 bool checkKey(string key, const map<string, vector<string> > &my_map);
 extern ofstream outfile;
 extern bool regFound;
-extern map<int, tuple<string, vector<string>,string> > graph;
+extern vector<tuple<string, vector<string>,string, bool>> graph;
 
 int numGraphElems = 0;
 
@@ -83,6 +83,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 	}
 
 	out = curSym;
+	const string out_orig = out;
 	bitSize = getBitSize(out, my_map);
 	if (signedVar(out, my_map))	//determine signed or unsigned
 		prefix = "S";
@@ -113,6 +114,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 	//	regout1 = true;
 	}
 	in1 = curSym;
+	const string in1_orig = in1;
 
 	// operation
 	iss >> curSym;
@@ -143,6 +145,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 	//	regout2 = true;
 	}
 	in2 = curSym;
+	const string in2_orig = in2;
 
 	// end of line
 	iss >> curSym;
@@ -156,10 +159,10 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 
 	string outstr, opstr;
 	bool gt = false, lt = false, eq = false;
-	// bool add = false, sub = false;
+	bool add = false, sub = false;
 
 	if (!op.compare("+")) {
-		//add = true;
+		add = true;
 		if (!in2.compare("1")) {
 			opstr = "INC";
 			outstr = prefix + "INC#(" + to_string(bitSize) + ") Inc_" + to_string(++numInc);
@@ -170,7 +173,7 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 		}
 	}
 	else if (!op.compare("-")) {
-		//sub = true;
+		sub = true;
 		if (!in2.compare("1")) {
 			opstr = "DEC";
 			outstr = prefix + "DEC#(" + to_string(bitSize) + ") Dec_" + to_string(++numDec);
@@ -222,12 +225,16 @@ bool assign_op_result(string op, string line, const map<string, vector<string> >
 		cerr << "Unknown operation: " << op << "in line: " << endl << line << endl;
 		return false;
 	}
-/*
-	if ((add || sub) && !in2.compare("1"))
-		//graph[numGraphElems++] = {opstr + to_string(bitSize), {in1}, out };
-	else
-		//graph[numGraphElems++] = {opstr + to_string(bitSize), {in1, in2}, out };
-*/
+
+	if ((add || sub) && !in2.compare("1")) {
+		vector<string> v{ in1_orig };
+		graph.push_back(make_tuple(opstr + to_string(bitSize), v, out_orig, false ));
+	}
+	else {
+		vector<string> v{ in1_orig,in2_orig };
+		graph.push_back(make_tuple(opstr + to_string(bitSize), v, out, false ));
+	}
+
 	if (gt)
 		outstr = outstr + "(" + in1 + "," + in2 + "," + out + ",,);";
 	else if (lt)
@@ -324,6 +331,7 @@ bool REG_(string line, const map<string, vector<string> > &my_map)
 	}
 
 	out = curSym;
+	const string out_orig = out;
 	bitSize = getBitSize(out, my_map);
 	if (signedVar(out, my_map))	//determine signed or unsigned
 		prefix = "S";
@@ -348,6 +356,7 @@ bool REG_(string line, const map<string, vector<string> > &my_map)
 		return false;
 	}
 	in = curSym;
+	const string in_orig = in;
 
 	// end of line
 	iss >> curSym;
@@ -361,7 +370,8 @@ bool REG_(string line, const map<string, vector<string> > &my_map)
 	else
 		outfile << prefix + "REG#(" + to_string(bitSize) + ") Reg_" << ++numReg << "(" << in << "," << out << ",clk,rst);" << endl;
 
-	//graph[numGraphElems++] = { "REG" + to_string(bitSize), {in}, out };
+	vector<string> v{ in_orig };
+	graph.push_back(make_tuple("REG" + to_string(bitSize), v, out_orig, false));
 	regFound = true;
 
 	return true;
@@ -389,6 +399,7 @@ bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 	}
 
 	out = curSym;
+	const string out_orig = out;
 	bitSize = getBitSize(out, my_map);
 	if (signedVar(out, my_map))	//determine signed or unsigned
 		prefix = "S";
@@ -413,6 +424,7 @@ bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 		return false;
 	}
 	in1 = curSym;
+	const string in1_orig = in1;
 
 	// operation
 	iss >> curSym;
@@ -434,6 +446,7 @@ bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 		return false;
 	}
 	in2 = curSym;
+	const string in2_orig = in2;
 
 	// operation
 	iss >> curSym;
@@ -455,6 +468,7 @@ bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 		return false;
 	}
 	in3 = curSym;
+	const string in3_orig = in3;
 
 	// end of line
 	iss >> curSym;
@@ -466,7 +480,8 @@ bool MUX2x1_(string line, const map<string, vector<string> > &my_map)
 	bitManip(in2, my_map);
 	bitManip(in3, my_map);
 
-	//graph[numGraphElems++] = {"MUX2x1" + to_string(bitSize), {in3,in2,in1},out };
+	vector<string> v{ in3_orig,in2_orig,in1_orig };
+	graph.push_back(make_tuple("MUX2x1" + to_string(bitSize), v,out_orig, false ));
 	outfile << prefix + "MUX2x1#(" + to_string(bitSize) + ") Mux_" << ++numMux << "(" << in3 << "," << in2 << "," << in1 << "," << out << ");" << endl;
 
 	return true;
