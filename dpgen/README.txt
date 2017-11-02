@@ -5,7 +5,7 @@ Assigment #2
 	Devan Paul Roper 		dpr32		574A
 	Dillon Jay Pena 		dpena94		574A
 	Jefferey Burton			jeffreyb1	574A
-	Reginal Raymond Glenn	rrg1		574A
+	Reginal Raymond Glenn		rrg1		574A
 
 2) Description
 	The dpgen project is made to convert c like code into valid verilog modules.  The arguments for executing 
@@ -21,6 +21,10 @@ Assigment #2
 		CMake setup
 		
 	+ Dillon Jay Pena
+		Project skeleton/layout
+		Input, wire, register -> Verilog code
+		All operations -> verilog modules
+		Critical path estimation
 		
 	+ Jefferey Burton
 		
