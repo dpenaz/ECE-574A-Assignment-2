@@ -19,13 +19,17 @@ Assigment #2
 		Output File Layout
 		Padding/Extension
 		CMake setup
+		Bug Fixes
 		
 	+ Dillon Jay Pena
 		Project skeleton/layout
 		Input, wire, register -> Verilog code
 		All operations -> verilog modules
 		Critical path estimation
+		Bug Fixes
 		
 	+ Jefferey Burton
+	-none
 		
 	+ Reginal Raymond Glenn
+	-none
